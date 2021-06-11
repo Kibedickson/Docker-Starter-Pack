@@ -20,7 +20,7 @@ services:
       - laravel
 
   mysql:
-    image: mysql:5.7.29
+    image: mysql:5.7.22
     container_name: letsmeet_mysql
     restart: unless-stopped
     tty: true
@@ -97,6 +97,18 @@ services:
     working_dir: /var/www/html
     user: laravel
     entrypoint: ['php', '/var/www/html/artisan']
+    networks:
+      - laravel
+
+  supervisor:
+    build:
+      context: .
+      dockerfile: supervisor.dockerfile
+    container_name: letsmeet_supervisor
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - artisan
     networks:
       - laravel
 
