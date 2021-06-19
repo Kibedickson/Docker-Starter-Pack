@@ -16,27 +16,24 @@ services:
     depends_on:
       - php
       - mysql
+      - sql
     networks:
       - laravel
 
-  mysql:
-    image: mysql:5.7.22
-    container_name: letsmeet_mysql
-    restart: unless-stopped
-    tty: true
-    ports:
-      - 4301:3306
-    volumes:
-      - ./mysql:/var/lib/mysql
-    environment:
-      MYSQL_DATABASE: letsmeet
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: secret
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
-    networks:
-      - laravel
+ sql:
+   image: microsoft/mssql-server-linux:latest
+   container_name: timetrax_sql
+   restart: unless-stopped
+   tty: true
+   ports:
+     - "14332:1433"
+   environment:
+     SA_PASSWORD: "secret"
+     ACCEPT_EULA: "Y"
+   volumes:
+     - ./mssql:/var/opt/mssql
+   networks:
+     - laravel
 
   php:
     build:
@@ -93,7 +90,7 @@ services:
     volumes:
       - ./src:/var/www/html:delegated
     depends_on:
-      - mysql
+      - sql
     working_dir: /var/www/html
     user: laravel
     entrypoint: ['php', '/var/www/html/artisan']
