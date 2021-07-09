@@ -1,119 +1,60 @@
 version: '3'
 
-networks:
-  laravel:
-
 services:
-  nginx:
+  php:
     build:
       context: .
-      dockerfile: nginx.dockerfile
-    container_name: letsmeet_nginx
-    ports:
-      - 8081:80
+      dockerfile: dev.dockerfile
     volumes:
-      - ./src:/var/www/html:delegated
+      - ./:/var/www/html
+
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/nginx_dev.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php
       - mysql
       - sql
-    networks:
-      - laravel
 
- sql:
-   image: microsoft/mssql-server-linux:latest
-   container_name: timetrax_sql
-   restart: unless-stopped
-   tty: true
-   ports:
-     - "14332:1433"
-   environment:
-     SA_PASSWORD: "secret"
-     ACCEPT_EULA: "Y"
-   volumes:
-     - ./mssql:/var/opt/mssql
-   networks:
-     - laravel
-
-  php:
-    build:
-      context: .
-      dockerfile: php.dockerfile
-    container_name: letsmeet_php
+  mysql:
+    image: mysql:5.7.22
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
     volumes:
-      - ./src:/var/www/html:delegated
-    networks:
-      - laravel
+      - mysqldata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
 
-  # redis:
-  #   image: redis:alpine
-  #   container_name: redis
-  #   restart: unless-stopped
-  #   ports:
-  #     - 6379:6379
-  #   networks:
-  #     - laravel
-
-  composer:
-    build:
-      context: .
-      dockerfile: composer.dockerfile
-    container_name: letsmeet_composer
+  sql:
+    image: microsoft/mssql-server-linux:latest
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD_TA}"
+      ACCEPT_EULA: "Y"
     volumes:
-      - ./src:/var/www/html
-    working_dir: /var/www/html
-    depends_on:
-      - php
-    user: laravel
-    entrypoint: ['composer', '--ignore-platform-reqs']
-    networks:
-      - laravel
+      - mssqldata:/var/opt/mssql
 
-  npm:
-    image: node:13.7
-    container_name: letsmeet_npm
-    volumes:
-      - ./src:/var/www/html
-    # ports:
-    #   - 3000:3000
-    #   - 3001:3001
-    working_dir: /var/www/html
-    entrypoint: ['npm']
-    networks:
-      - laravel
+#  npm:
+#    image: node:13.7
+#    user: node
+#    volumes:
+#      - ./:/assets
+#    working_dir: /assets
+#    command: run watch
+#    entrypoint: [ 'npm' ]
 
-  artisan:
-    build:
-      context: .
-      dockerfile: php.dockerfile
-    container_name: letsmeet_artisan
-    volumes:
-      - ./src:/var/www/html:delegated
-    depends_on:
-      - sql
-    working_dir: /var/www/html
-    user: laravel
-    entrypoint: ['php', '/var/www/html/artisan']
-    networks:
-      - laravel
-
-  supervisor:
-    build:
-      context: .
-      dockerfile: supervisor.dockerfile
-    container_name: letsmeet_supervisor
-    volumes:
-      - ./src:/var/www/html:delegated
-    depends_on:
-      - artisan
-    networks:
-      - laravel
-
-  # mailhog:
-  #   image: mailhog/mailhog:latest
-  #   container_name: mailhog
-  #   ports:
-  #     - 1025:1025
-  #     - 8025:8025
-  #   networks:
-  #     - laravel
+volumes:
+  mysqldata:
+  mssqldata:
